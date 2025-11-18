@@ -28,11 +28,11 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 transition-all duration-300">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 transition-all duration-300 px-4 py-8">
       <div className="fixed inset-0 grid-pattern opacity-30"></div>
       <ThreeBackground />
       <motion.div 
-        className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4 z-10 border border-gray-200"
+        className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md z-10 border border-gray-200"
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -46,8 +46,8 @@ export default function Login() {
           >
             <Briefcase className="w-8 h-8 text-white" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900">FreelanceFlow</h1>
-          <p className="text-gray-600 mt-2">Sign in to your account</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">FreelanceFlow</h1>
+          <p className="text-gray-600 mt-2 text-sm sm:text-base">Sign in to your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

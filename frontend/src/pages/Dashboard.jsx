@@ -81,11 +81,11 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your business.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600 mt-2 text-sm sm:text-base">Welcome back! Here's what's happening with your business.</p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           title="Total Clients"
           value={stats.clients}
@@ -118,25 +118,25 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Invoices</h2>
-        <div className="overflow-x-auto">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Recent Invoices</h2>
+        <div className="table-responsive mobile-scroll">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Invoice #</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Client</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Amount</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
+                <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700 text-sm">Invoice #</th>
+                <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700 text-sm">Client</th>
+                <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700 text-sm">Amount</th>
+                <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-700 text-sm">Status</th>
               </tr>
             </thead>
             <tbody>
               {recentInvoices.map((invoice) => (
                 <tr key={invoice._id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4 text-gray-900">{invoice.invoiceNumber}</td>
-                  <td className="py-3 px-4 text-gray-900">{invoice.clientId?.name}</td>
-                  <td className="py-3 px-4 text-gray-900">${invoice.total.toLocaleString()}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <td className="py-2 sm:py-3 px-2 sm:px-4 text-gray-900 text-sm font-medium">{invoice.invoiceNumber}</td>
+                  <td className="py-2 sm:py-3 px-2 sm:px-4 text-gray-900 text-sm truncate max-w-[120px]">{invoice.clientId?.name}</td>
+                  <td className="py-2 sm:py-3 px-2 sm:px-4 text-gray-900 text-sm font-semibold">${invoice.total.toLocaleString()}</td>
+                  <td className="py-2 sm:py-3 px-2 sm:px-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                       invoice.status === 'Paid' 
                         ? 'bg-green-100 text-green-800'
                         : invoice.status === 'Overdue'
