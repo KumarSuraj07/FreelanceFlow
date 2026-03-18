@@ -1,6 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 require('dotenv').config();
 
@@ -13,16 +16,62 @@ const { sendPaymentReminders } = require('./utils/emailService');
 
 const app = express();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Security headers
+app.use(helmet());
+
+// Locked CORS
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow server-to-server / curl (no origin) in dev
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
+
+// Body parsing with size limit
+app.use(express.json({ limit: '10kb' }));
+
+// NoSQL injection sanitization
+app.use(mongoSanitize());
+
+// Rate limiters
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests, please try again later.' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10, // max 10 login/signup attempts per 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many auth attempts, please try again later.' },
+});
+
+app.use(globalLimiter);
+
+// Health check
+app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/notes', noteRoutes);
+
+// Global error handler — never leak internals
+app.use((err, req, res, next) => {
+  console.error(err);
+  const status = err.status || 500;
+  const message = status < 500 ? err.message : 'Internal server error';
+  res.status(status).json({ message });
+});
 
 // Cron job for payment reminders (runs daily at 9 AM)
 cron.schedule('0 9 * * *', () => {
@@ -30,12 +79,24 @@ cron.schedule('0 9 * * *', () => {
   sendPaymentReminders();
 });
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// MongoDB connection with retry
+const connectDB = async () => {
+  const opts = { serverSelectionTimeoutMS: 5000 };
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, opts);
+    console.log('MongoDB connected');
+  } catch (err) {
+    console.error('MongoDB connection error:', err.message);
+    setTimeout(connectDB, 5000); // retry after 5s
+  }
+};
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected — retrying...');
+  setTimeout(connectDB, 5000);
+});
+
+connectDB();
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
