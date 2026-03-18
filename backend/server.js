@@ -5,8 +5,6 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
-const path = require('path');
-const fs = require('fs');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -70,6 +68,7 @@ app.use(globalLimiter);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ message: 'FreelanceFlow API is running', status: 'ok' }));
 
 // Routes
 app.use('/api/auth', authLimiter, authRoutes);
@@ -77,18 +76,6 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/notes', noteRoutes);
-
-// Serve frontend static files (built into backend/public by vite)
-const frontendBuild = path.join(__dirname, 'public');
-app.use(express.static(frontendBuild));
-app.get('*', (req, res) => {
-  const index = path.join(frontendBuild, 'index.html');
-  if (fs.existsSync(index)) {
-    res.sendFile(index);
-  } else {
-    res.status(404).json({ message: 'Frontend not built. Run: npm run build' });
-  }
-});
 
 // Global error handler — never leak internals
 app.use((err, req, res, next) => {
