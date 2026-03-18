@@ -24,7 +24,7 @@ function AnimatedSphere({ position, color }) {
 export default function ThreeBackground() {
   return (
     <div className="fixed inset-0 -z-10">
-      <Canvas camera={{ position: [0, 0, 5] }}>
+      <Canvas camera={{ position: [0, 0, 5] }} gl={{ alpha: true }} style={{ background: 'transparent' }}>
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
         
