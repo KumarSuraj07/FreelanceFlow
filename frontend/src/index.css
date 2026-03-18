@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary-50:  #eff6ff;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+}
+
 @layer base {
   html {
     @apply scroll-smooth;
@@ -14,12 +21,57 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  html.dark body {
+    @apply bg-gradient-to-br from-gray-950 to-gray-900 text-gray-100;
+  }
   
   * {
     @apply touch-manipulation;
   }
 }
 
+/* ── Dark mode global overrides ─────────────────────────────────────────── */
+html.dark .bg-white               { background-color: #1e2433 !important; }
+html.dark .bg-gray-50             { background-color: #161b27 !important; }
+html.dark .bg-gray-100            { background-color: #252d3d !important; }
+html.dark .hover\:bg-gray-50:hover  { background-color: #252d3d !important; }
+html.dark .hover\:bg-gray-100:hover { background-color: #2e3850 !important; }
+
+html.dark .border-gray-100        { border-color: #2e3850 !important; }
+html.dark .border-gray-200        { border-color: #2e3850 !important; }
+html.dark .border-gray-300        { border-color: #3a4560 !important; }
+
+html.dark .text-gray-900          { color: #f1f5f9 !important; }
+html.dark .text-gray-800          { color: #e2e8f0 !important; }
+html.dark .text-gray-700          { color: #cbd5e1 !important; }
+html.dark .text-gray-600          { color: #94a3b8 !important; }
+html.dark .text-gray-500          { color: #64748b !important; }
+html.dark .text-gray-400          { color: #475569 !important; }
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #252d3d !important;
+  border-color: #2e3850 !important;
+  color: #f1f5f9 !important;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder { color: #475569 !important; }
+
+html.dark .shadow-sm,
+html.dark .shadow-lg,
+html.dark .shadow-xl { box-shadow: 0 4px 24px 0 rgba(0,0,0,0.5) !important; }
+
+html.dark .divide-gray-50 > * + *  { border-color: #2e3850 !important; }
+html.dark .divide-gray-100 > * + * { border-color: #2e3850 !important; }
+
+html.dark .from-gray-50  { --tw-gradient-from: #161b27 !important; }
+html.dark .to-blue-50    { --tw-gradient-to:   #1a2035 !important; }
+html.dark .from-primary-50 { --tw-gradient-from: #1e2a3a !important; }
+html.dark .to-blue-50    { --tw-gradient-to:   #1a2035 !important; }
+
+/* ── Component overrides ────────────────────────────────────────────────── */
 @layer components {
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-medium py-2.5 px-4 sm:py-2 sm:px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl min-h-[44px] sm:min-h-0;

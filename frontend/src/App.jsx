@@ -9,6 +9,7 @@ import ClientDetails from './pages/ClientDetails'
 import Projects from './pages/Projects'
 import CreateInvoice from './pages/CreateInvoice'
 import Invoices from './pages/Invoices'
+import Settings from './pages/Settings'
 import InstallPrompt from './components/ui/InstallPrompt'
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           <Route path="projects" element={<Projects />} />
           <Route path="invoices" element={<Invoices />} />
           <Route path="invoices/create" element={<CreateInvoice />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
       <InstallPrompt />

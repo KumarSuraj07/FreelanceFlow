@@ -58,11 +58,18 @@ export const AuthProvider = ({ children }) => {
     setUser(null)
   }
 
+  const updateUser = (updatedUser) => {
+    const merged = { ...user, ...updatedUser }
+    localStorage.setItem('user', JSON.stringify(merged))
+    setUser(merged)
+  }
+
   const value = {
     user,
     login,
     signup,
     logout,
+    updateUser,
     loading
   }
 
