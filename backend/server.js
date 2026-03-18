@@ -78,14 +78,17 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/notes', noteRoutes);
 
-// Serve frontend static files if build exists
+// Serve frontend static files (built into backend/public by vite)
 const frontendBuild = path.join(__dirname, 'public');
-if (fs.existsSync(frontendBuild)) {
-  app.use(express.static(frontendBuild));
-  app.get('*', (req, res) => res.sendFile(path.join(frontendBuild, 'index.html')));
-} else {
-  app.get('/', (req, res) => res.json({ message: 'FreelanceFlow API is running', status: 'ok' }));
-}
+app.use(express.static(frontendBuild));
+app.get('*', (req, res) => {
+  const index = path.join(frontendBuild, 'index.html');
+  if (fs.existsSync(index)) {
+    res.sendFile(index);
+  } else {
+    res.status(404).json({ message: 'Frontend not built. Run: npm run build' });
+  }
+});
 
 // Global error handler — never leak internals
 app.use((err, req, res, next) => {
