@@ -52,25 +52,19 @@ export default function Sidebar({ isOpen, onClose }) {
         <X size={20} />
       </button>
       
-      <div className={`p-4 ${isCompact ? 'sm:p-3' : 'sm:p-6'} border-b border-gray-200`}>
+      <div className={`px-1 mb-3 ${isCompact ? 'sm:px-1' : 'sm:px-2'} border-b border-gray-200`}>
         <div className={`flex items-center ${isCompact ? 'justify-center' : 'space-x-3'}`}>
-          <img src="/icon.png" alt="FreelanceFlow" className="w-9 h-9 rounded-lg object-contain flex-shrink-0" />
-          {!isCompact && (
-            <div>
-              <img src="/logo.png" alt="FreelanceFlow" className="h-6 object-contain" />
-              <p className="text-xs text-gray-600">Professional CRM</p>
-            </div>
-          )}
+          <img src="/logo.png" alt="FreelanceFlow" className={`object-contain ${isCompact ? 'h-10' : 'h-29'}`} />
         </div>
         {!isCompact && (
-          <div className="mt-4 p-3 bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg">
+          <div className="mt-0 mb-3 p-2 bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg">
             <p className="text-sm font-medium text-gray-900">Welcome back,</p>
             <p className="text-sm text-primary-600 font-semibold truncate">{user?.name}</p>
           </div>
         )}
       </div>
       
-      <nav className="px-2 py-6 space-y-2 flex-1 overflow-y-auto">
+      <nav className="px-2 py-1 space-y-1 flex-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
