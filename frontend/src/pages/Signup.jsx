@@ -36,6 +36,14 @@ export default function Signup() {
         transition={{ duration: 0.5 }}
       >
         <div className="text-center mb-8">
+          <motion.div
+            className="inline-flex items-center justify-center mb-4"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <img src="/icon.png" alt="FreelanceFlow" className="w-16 h-16 rounded-2xl object-contain shadow-lg" />
+          </motion.div>
           <h1 className="text-3xl font-bold text-gray-900">FreelanceFlow</h1>
           <p className="text-gray-600 mt-2">Create your account</p>
         </div>

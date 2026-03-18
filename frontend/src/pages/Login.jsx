@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { toast } from 'react-hot-toast'
-import { Briefcase, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import ThreeBackground from '../components/ui/ThreeBackground'
 
 export default function Login() {
@@ -39,12 +39,12 @@ export default function Login() {
       >
         <div className="text-center mb-8">
           <motion.div 
-            className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl mb-4 shadow-lg"
+            className="inline-flex items-center justify-center mb-4"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <Briefcase className="w-8 h-8 text-white" />
+            <img src="/icon.png" alt="FreelanceFlow" className="w-16 h-16 rounded-2xl object-contain shadow-lg" />
           </motion.div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">FreelanceFlow</h1>
           <p className="text-gray-600 mt-2 text-sm sm:text-base">Sign in to your account</p>
