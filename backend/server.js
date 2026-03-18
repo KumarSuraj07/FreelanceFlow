@@ -20,7 +20,15 @@ const app = express();
 app.use(helmet());
 
 // Locked CORS
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
+// const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : [
+      'http://localhost:3000',
+      'https://freelance-flow-a1i28519n-surajs-projects-e1a93b31.vercel.app'
+    ];
+
 app.use(cors({
   origin: (origin, callback) => {
     // allow server-to-server / curl (no origin) in dev
