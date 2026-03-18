@@ -16,27 +16,30 @@ const { sendPaymentReminders } = require('./utils/emailService');
 
 const app = express();
 
-// Security headers
-app.use(helmet());
+// Locked CORS — must be FIRST before helmet and everything else
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:4173')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
 
-// Locked CORS
-// const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
+console.log('Allowed origins:', allowedOrigins);
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
-  : [
-      'http://localhost:3000',
-      'https://freelance-flow-a1i28519n-surajs-projects-e1a93b31.vercel.app'
-    ];
-
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
-    // allow server-to-server / curl (no origin) in dev
+    // allow server-to-server / curl (no origin header)
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error('Not allowed by CORS'));
+    callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // handle preflight for all routes
+
+// Security headers (after CORS so it doesn't interfere with preflight)
+app.use(helmet({ crossOriginResourcePolicy: false }));
 
 // Body parsing with size limit
 app.use(express.json({ limit: '10kb' }));
@@ -75,7 +78,10 @@ app.use('/api/notes', noteRoutes);
 
 // Global error handler — never leak internals
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error(err.message);
+  if (err.message?.startsWith('CORS blocked')) {
+    return res.status(403).json({ message: 'CORS: origin not allowed' });
+  }
   const status = err.status || 500;
   const message = status < 500 ? err.message : 'Internal server error';
   res.status(status).json({ message });
