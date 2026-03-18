@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -75,6 +77,15 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/notes', noteRoutes);
+
+// Serve frontend static files if build exists
+const frontendBuild = path.join(__dirname, 'public');
+if (fs.existsSync(frontendBuild)) {
+  app.use(express.static(frontendBuild));
+  app.get('*', (req, res) => res.sendFile(path.join(frontendBuild, 'index.html')));
+} else {
+  app.get('/', (req, res) => res.json({ message: 'FreelanceFlow API is running', status: 'ok' }));
+}
 
 // Global error handler — never leak internals
 app.use((err, req, res, next) => {

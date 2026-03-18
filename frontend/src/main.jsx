@@ -7,13 +7,8 @@ import { AuthProvider } from './context/AuthContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { Toaster } from 'react-hot-toast'
 
-// In production the frontend is served from a different domain so we need the
-// full API URL. In development Vite proxies /api → localhost:5000, so we leave
-// baseURL empty and let the proxy handle it.
-if (import.meta.env.PROD) {
-  axios.defaults.baseURL = import.meta.env.VITE_API_URL
-}
-
+// Relative /api paths work in both dev (Vite proxy → localhost:5000)
+// and production (same-origin Express server)
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
