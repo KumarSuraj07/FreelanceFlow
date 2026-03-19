@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { toast } from 'react-hot-toast'
 import { Mail, Lock, Eye, EyeOff, Users, FileText, DollarSign, BarChart2, Zap, Star } from 'lucide-react'
+import AuthFooter from '../components/ui/AuthFooter'
 
 const features = [
   { icon: Users,      label: 'Client Management',  desc: 'Store contacts, budgets & project types' },
@@ -39,7 +40,8 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex flex-col md:flex-row flex-1">
 
       {/* ── Info panel (top on mobile, left on desktop) ── */}
       <motion.div
@@ -187,6 +189,8 @@ export default function Login() {
           </p>
         </motion.div>
       </div>
+      </div>
+      <AuthFooter />
     </div>
   )
 }

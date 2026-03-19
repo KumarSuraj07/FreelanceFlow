@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { toast } from 'react-hot-toast'
 import { User, Mail, Lock, Eye, EyeOff, CheckCircle, Zap, Clock, TrendingUp, Shield } from 'lucide-react'
+import AuthFooter from '../components/ui/AuthFooter'
 
 const perks = [
   { icon: CheckCircle, text: 'Client & project management' },
@@ -42,7 +43,8 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex flex-col md:flex-row flex-1">
 
       {/* ── Info panel (top on mobile, left on desktop) ── */}
       <motion.div
@@ -191,6 +193,8 @@ export default function Signup() {
           </p>
         </motion.div>
       </div>
+      </div>
+      <AuthFooter />
     </div>
   )
 }
