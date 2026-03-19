@@ -34,7 +34,7 @@ function applyThemeColor(colorName) {
 }
 
 export const SettingsProvider = ({ children }) => {
-  const [themeColor, setThemeColorState] = useState(() => localStorage.getItem('themeColor') || 'blue')
+  const [themeColor, setThemeColorState] = useState(() => localStorage.getItem('themeColor') || 'green')
   const [sidebarStyle, setSidebarStyleState] = useState(() => localStorage.getItem('sidebarStyle') || 'Default')
   const [isDark, setIsDarkState] = useState(() => localStorage.getItem('darkMode') === 'true')
   const [notifPrefs, setNotifPrefsState] = useState(() => {
