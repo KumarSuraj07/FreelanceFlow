@@ -7,7 +7,9 @@ import {
   FolderOpen, 
   FileText, 
   X,
-  TrendingUp
+  TrendingUp,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
@@ -24,16 +26,13 @@ const SIDEBAR_WIDTHS = { Compact: 'w-16', Default: 'w-64', Wide: 'w-72' }
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth()
-  const { sidebarStyle } = useSettings()
+  const { sidebarStyle, setSidebarStyle } = useSettings()
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
   const isCompact = sidebarStyle === 'Compact'
   const sidebarW = SIDEBAR_WIDTHS[sidebarStyle] || 'w-64'
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 1024)
-    }
-    
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024)
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -41,13 +40,20 @@ export default function Sidebar({ isOpen, onClose }) {
   const [stats, setStats] = useState({ clients: 0, projects: 0, invoices: 0 })
 
   useEffect(() => {
-    axios.all([
-      axios.get('/api/clients'),
-      axios.get('/api/projects'),
-      axios.get('/api/invoices'),
-    ]).then(([c, p, i]) => setStats({ clients: c.data.length, projects: p.data.length, invoices: i.data.length }))
-    .catch(() => {})
+    const fetchStats = () => {
+      axios.all([
+        axios.get('/api/clients'),
+        axios.get('/api/projects'),
+        axios.get('/api/invoices'),
+      ]).then(([c, p, i]) => setStats({ clients: c.data.length, projects: p.data.length, invoices: i.data.length }))
+      .catch(() => {})
+    }
+    fetchStats()
+    const interval = setInterval(fetchStats, 15000)
+    return () => clearInterval(interval)
   }, [])
+
+  const toggleCompact = () => setSidebarStyle(isCompact ? 'Default' : 'Compact')
 
   return (
     <>
@@ -63,18 +69,30 @@ export default function Sidebar({ isOpen, onClose }) {
       >
         <X size={20} />
       </button>
+
+      {/* Compact toggle — desktop only */}
+      {isDesktop && (
+        <button
+          onClick={toggleCompact}
+          title={isCompact ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden lg:flex absolute top-4 right-3 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg z-10 transition-colors"
+        >
+          {isCompact ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+        </button>
+      )}
       
-      <div className={`px-1 mb-3 ${isCompact ? 'sm:px-1' : 'sm:px-2'} border-b border-gray-200`}>
-        <div className={`flex items-center ${isCompact ? 'justify-center' : 'space-x-3'}`}>
-          <img src="/logo.png" alt="FreelanceFlow" className={`object-contain ${isCompact ? 'h-10' : 'h-29'}`} />
-        </div>
-        {!isCompact && (
+      {!isCompact && (
+        <div className="px-1 sm:px-2 mb-3 border-b border-gray-200">
+          <div className="flex items-center space-x-3">
+            <img src="/logo.png" alt="FreelanceFlow" className="object-contain h-29" />
+          </div>
           <div className="mt-0 mb-3 p-2 bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg">
             <p className="text-sm font-medium text-gray-900">Welcome back,</p>
             <p className="text-sm text-primary-600 font-semibold truncate">{user?.name}</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+      {isCompact && <div className="h-12 border-b border-gray-200" />}
       
       <nav className="px-2 py-1 space-y-1 overflow-y-auto flex-1">
         {navItems.map((item) => (

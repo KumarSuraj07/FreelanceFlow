@@ -12,6 +12,7 @@ const clientRoutes = require('./routes/clients');
 const projectRoutes = require('./routes/projects');
 const invoiceRoutes = require('./routes/invoices');
 const noteRoutes = require('./routes/notes');
+const notificationRoutes = require('./routes/notifications');
 const { sendPaymentReminders } = require('./utils/emailService');
 
 const app = express();
@@ -76,6 +77,7 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/notes', noteRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Global error handler — never leak internals
 app.use((err, req, res, next) => {

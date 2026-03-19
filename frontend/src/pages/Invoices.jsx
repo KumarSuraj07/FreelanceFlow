@@ -57,7 +57,15 @@ export default function Invoices() {
   const fetchInvoices = async () => {
     try {
       const response = await axios.get('/api/invoices')
-      setInvoices(response.data)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const invoices = response.data
+      // Auto-mark overdue: unpaid invoices past due date
+      const updates = invoices
+        .filter(inv => inv.status === 'Unpaid' && new Date(inv.dueDate) < today)
+        .map(inv => axios.put(`/api/invoices/${inv._id}`, { status: 'Overdue' }).then(() => { inv.status = 'Overdue' }).catch(() => {}))
+      await Promise.all(updates)
+      setInvoices([...invoices])
     } catch (error) {
       toast.error('Failed to fetch invoices')
     } finally {

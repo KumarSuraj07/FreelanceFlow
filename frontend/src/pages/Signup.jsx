@@ -29,8 +29,21 @@ export default function Signup() {
   const [loading, setLoading]           = useState(false)
   const { signup } = useAuth()
 
+  const pwChecks = [
+    { label: 'At least 8 characters', ok: password.length >= 8 },
+    { label: 'Uppercase letter', ok: /[A-Z]/.test(password) },
+    { label: 'Lowercase letter', ok: /[a-z]/.test(password) },
+    { label: 'Number', ok: /\d/.test(password) },
+    { label: 'Special character (!@#$…)', ok: /[^A-Za-z0-9]/.test(password) },
+  ]
+  const isStrongPassword = pwChecks.every(c => c.ok)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!isStrongPassword) {
+      toast.error('Please use a strong password')
+      return
+    }
     setLoading(true)
     try {
       await signup(name, email, password)
@@ -167,6 +180,16 @@ export default function Signup() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {password && (
+                <div className="mt-2 grid grid-cols-2 gap-1">
+                  {pwChecks.map(({ label, ok }) => (
+                    <p key={label} className={`text-xs flex items-center gap-1.5 ${ok ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 ${ok ? 'bg-green-500' : 'bg-gray-300'}`}>{ok ? '✓' : '·'}</span>
+                      {label}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
 
             <motion.button

@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { User, Mail, Phone, MapPin, Lock, Save, Edit2 } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Lock, Save, Edit2, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
+
+const PHONE_REGEX = /^\+?[1-9]\d{6,14}$/
+const LOCATION_REGEX = /^[a-zA-Z\s,.-]{2,100}$/
 
 export default function Profile() {
   const { user, updateUser } = useAuth()
@@ -15,11 +18,29 @@ export default function Profile() {
     phone: user?.phone || '',
     location: user?.location || '',
   })
+  const [fieldErrors, setFieldErrors] = useState({})
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false })
   const [saving, setSaving] = useState(false)
   const [changingPw, setChangingPw] = useState(false)
 
+  const pwChecks = [
+    { label: 'At least 8 characters', ok: passwordData.newPassword.length >= 8 },
+    { label: 'Uppercase letter', ok: /[A-Z]/.test(passwordData.newPassword) },
+    { label: 'Lowercase letter', ok: /[a-z]/.test(passwordData.newPassword) },
+    { label: 'Number', ok: /\d/.test(passwordData.newPassword) },
+    { label: 'Special character', ok: /[^A-Za-z0-9]/.test(passwordData.newPassword) },
+  ]
+  const isStrongPw = pwChecks.every(c => c.ok)
+
   const handleProfileSave = async () => {
+    const errs = {}
+    if (profileData.phone && !PHONE_REGEX.test(profileData.phone.replace(/[\s()-]/g, '')))
+      errs.phone = 'Enter a valid phone number (e.g. +1234567890)'
+    if (profileData.location && !LOCATION_REGEX.test(profileData.location))
+      errs.location = 'Enter a valid location (e.g. New York, USA)'
+    if (Object.keys(errs).length) { setFieldErrors(errs); return }
+    setFieldErrors({})
     setSaving(true)
     try {
       const { data } = await axios.put('/api/auth/profile', profileData)
@@ -35,6 +56,7 @@ export default function Profile() {
 
   const handlePasswordChange = async (e) => {
     e.preventDefault()
+    if (!isStrongPw) { toast.error('Please use a strong password'); return }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       return toast.error('New passwords do not match')
     }
@@ -61,11 +83,12 @@ export default function Profile() {
         <input
           type={type}
           value={profileData[field]}
-          onChange={e => setProfileData(p => ({ ...p, [field]: e.target.value }))}
+          onChange={e => { setProfileData(p => ({ ...p, [field]: e.target.value })); setFieldErrors(fe => ({ ...fe, [field]: '' })) }}
           disabled={!editMode}
-          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-600"
+          className={`w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-600 ${fieldErrors[field] ? 'border-red-400' : 'border-gray-200'}`}
         />
       </div>
+      {fieldErrors[field] && <p className="text-xs text-red-500 mt-1">{fieldErrors[field]}</p>}
     </div>
   )
 
@@ -124,19 +147,34 @@ export default function Profile() {
         </h3>
         <form onSubmit={handlePasswordChange} className="space-y-4">
           {[
-            { label: 'Current Password', field: 'currentPassword' },
-            { label: 'New Password', field: 'newPassword' },
-            { label: 'Confirm New Password', field: 'confirmPassword' },
-          ].map(({ label, field }) => (
+            { label: 'Current Password', field: 'currentPassword', showKey: 'current' },
+            { label: 'New Password', field: 'newPassword', showKey: 'new' },
+            { label: 'Confirm New Password', field: 'confirmPassword', showKey: 'confirm' },
+          ].map(({ label, field, showKey }) => (
             <div key={field}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-              <input
-                type="password"
-                value={passwordData[field]}
-                onChange={e => setPasswordData(p => ({ ...p, [field]: e.target.value }))}
-                required
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+              <div className="relative">
+                <input
+                  type={showPw[showKey] ? 'text' : 'password'}
+                  value={passwordData[field]}
+                  onChange={e => setPasswordData(p => ({ ...p, [field]: e.target.value }))}
+                  required
+                  className="w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <button type="button" onClick={() => setShowPw(s => ({ ...s, [showKey]: !s[showKey] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showPw[showKey] ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+              {field === 'newPassword' && passwordData.newPassword && (
+                <div className="mt-2 grid grid-cols-2 gap-1">
+                  {pwChecks.map(({ label: cl, ok }) => (
+                    <p key={cl} className={`text-xs flex items-center gap-1.5 ${ok ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 ${ok ? 'bg-green-500' : 'bg-gray-300'}`}>{ok ? '✓' : '·'}</span>
+                      {cl}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           <button type="submit" disabled={changingPw} className="btn-primary text-sm">

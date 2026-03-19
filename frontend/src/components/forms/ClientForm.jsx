@@ -2,16 +2,21 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 
+const PHONE_REGEX = /^\+?[1-9]\d{6,14}$/
+const LOCATION_REGEX = /^[a-zA-Z\s,.-]{2,100}$/
+
 export default function ClientForm({ client, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
+    location: '',
     company: '',
     projectType: '',
     budget: '',
     status: 'Active'
   })
+  const [errors, setErrors] = useState({})
 
   useEffect(() => {
     if (client) {
@@ -19,6 +24,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
         name: client.name || '',
         email: client.email || '',
         phone: client.phone || '',
+        location: client.location || '',
         company: client.company || '',
         projectType: client.projectType || '',
         budget: client.budget || '',
@@ -27,8 +33,19 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
     }
   }, [client])
 
+  const validate = () => {
+    const errs = {}
+    if (formData.phone && !PHONE_REGEX.test(formData.phone.replace(/[\s()-]/g, '')))
+      errs.phone = 'Enter a valid phone number (e.g. +1234567890)'
+    if (formData.location && !LOCATION_REGEX.test(formData.location))
+      errs.location = 'Enter a valid location (e.g. New York, USA)'
+    return errs
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
+    const errs = validate()
+    if (Object.keys(errs).length) { setErrors(errs); return }
     onSubmit(formData)
   }
 
@@ -92,16 +109,29 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
             <input
               type="tel"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="+1234567890"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.phone ? 'border-red-400' : 'border-gray-300'}`}
             />
+            {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="City, Country"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.location ? 'border-red-400' : 'border-gray-300'}`}
+            />
+            {errors.location && <p className="text-xs text-red-500 mt-1">{errors.location}</p>}
           </div>
 
           <div>

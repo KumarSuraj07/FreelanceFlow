@@ -2,16 +2,27 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, Search, Settings, Menu, CheckCircle, AlertCircle, DollarSign, Clock, Sun, Moon, User, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
-const notifications = [
-  { id: 1, icon: DollarSign, color: 'text-green-500 bg-green-50', title: 'Invoice #INV-004 Paid', desc: 'Client Acme Corp paid $2,400', time: '2m ago', unread: true },
-  { id: 2, icon: AlertCircle, color: 'text-red-500 bg-red-50', title: 'Invoice Overdue', desc: 'Invoice #INV-002 is 3 days overdue', time: '1h ago', unread: true },
-  { id: 3, icon: CheckCircle, color: 'text-blue-500 bg-blue-50', title: 'Project Completed', desc: 'Website Redesign marked as done', time: '3h ago', unread: true },
-  { id: 4, icon: Clock, color: 'text-yellow-500 bg-yellow-50', title: 'Deadline Tomorrow', desc: 'Mobile App project due tomorrow', time: '5h ago', unread: false },
-  { id: 5, icon: DollarSign, color: 'text-green-500 bg-green-50', title: 'New Invoice Created', desc: 'Invoice #INV-005 created for $1,800', time: '1d ago', unread: false },
-]
+const TYPE_META = {
+  overdue:         { icon: AlertCircle, color: 'text-red-500 bg-red-50' },
+  due_soon:        { icon: Clock,       color: 'text-yellow-500 bg-yellow-50' },
+  paid:            { icon: DollarSign,  color: 'text-green-500 bg-green-50' },
+  deadline:        { icon: Clock,       color: 'text-orange-500 bg-orange-50' },
+  project_overdue: { icon: AlertCircle, color: 'text-red-500 bg-red-50' },
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1)  return 'just now'
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d ago`
+}
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useAuth()
@@ -19,26 +30,43 @@ export default function Header({ onMenuClick }) {
   const navigate = useNavigate()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [notifs, setNotifs] = useState(notifications)
+  const [notifs, setNotifs] = useState([])
+  const [readIds, setReadIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('readNotifIds') || '[]')) }
+    catch { return new Set() }
+  })
   const dropdownRef = useRef(null)
   const userMenuRef = useRef(null)
 
-  const unreadCount = notifs.filter(n => n.unread).length
+  const fetchNotifs = useCallback(async () => {
+    try {
+      const { data } = await axios.get('/api/notifications')
+      setNotifs(data)
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    fetchNotifs()
+    const interval = setInterval(fetchNotifs, 60000)
+    return () => clearInterval(interval)
+  }, [fetchNotifs])
 
   useEffect(() => {
     function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setShowNotifications(false)
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
-        setShowUserMenu(false)
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowNotifications(false)
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const markAllRead = () => setNotifs(prev => prev.map(n => ({ ...n, unread: false })))
+  const unreadCount = notifs.filter(n => !readIds.has(n.id)).length
+
+  const markAllRead = () => {
+    const ids = new Set(notifs.map(n => n.id))
+    localStorage.setItem('readNotifIds', JSON.stringify([...ids]))
+    setReadIds(ids)
+  }
 
   return (
     <motion.header 
@@ -101,18 +129,27 @@ export default function Header({ onMenuClick }) {
                     )}
                   </div>
                   <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
-                    {notifs.map(({ id, icon: Icon, color, title, desc, time, unread }) => (
-                      <div key={id} className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${unread ? 'bg-blue-50/40' : ''}`}>
-                        <div className={`p-2 rounded-lg ${color} flex-shrink-0`}>
-                          <Icon size={14} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{title}</p>
-                          <p className="text-xs text-gray-500 truncate">{desc}</p>
-                        </div>
-                        <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">{time}</span>
+                    {notifs.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <CheckCircle size={28} className="mx-auto text-gray-300 mb-2" />
+                        <p className="text-sm text-gray-400">All caught up! No alerts right now.</p>
                       </div>
-                    ))}
+                    ) : notifs.map((n) => {
+                      const { icon: Icon, color } = TYPE_META[n.type] || { icon: Bell, color: 'text-gray-500 bg-gray-50' }
+                      const unread = !readIds.has(n.id)
+                      return (
+                        <div key={n.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${unread ? 'bg-blue-50/40' : ''}`}>
+                          <div className={`p-2 rounded-lg ${color} flex-shrink-0`}>
+                            <Icon size={14} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{n.title}</p>
+                            <p className="text-xs text-gray-500">{n.desc}</p>
+                          </div>
+                          <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">{timeAgo(n.time)}</span>
+                        </div>
+                      )
+                    })}
                   </div>
                 </motion.div>
               )}

@@ -113,13 +113,19 @@ function SecurityTab() {
   const [show, setShow] = useState({ current: false, new: false, confirm: false })
   const [saving, setSaving] = useState(false)
 
+  const checks = [
+    { label: 'At least 8 characters', ok: form.newPassword.length >= 8 },
+    { label: 'Uppercase letter', ok: /[A-Z]/.test(form.newPassword) },
+    { label: 'Lowercase letter', ok: /[a-z]/.test(form.newPassword) },
+    { label: 'Number', ok: /\d/.test(form.newPassword) },
+    { label: 'Special character (!@#$…)', ok: /[^A-Za-z0-9]/.test(form.newPassword) },
+  ]
+  const isStrong = checks.every(c => c.ok)
+
   const handleSave = async () => {
+    if (!isStrong) { toast.error('Please use a strong password'); return }
     if (form.newPassword !== form.confirmPassword) {
       toast.error('New passwords do not match')
-      return
-    }
-    if (form.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters')
       return
     }
     setSaving(true)
@@ -166,6 +172,16 @@ function SecurityTab() {
                 {show[showKey] ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
+            {key === 'newPassword' && form.newPassword && (
+              <div className="mt-2 space-y-1">
+                {checks.map(({ label: cl, ok }) => (
+                  <p key={cl} className={`text-xs flex items-center gap-1.5 ${ok ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-white text-[9px] font-bold ${ok ? 'bg-green-500' : 'bg-gray-300'}`}>{ok ? '✓' : '·'}</span>
+                    {cl}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -176,7 +192,7 @@ function SecurityTab() {
 
 // ── Appearance Tab ───────────────────────────────────────────────────────────
 function AppearanceTab() {
-  const { isDark, toggleDark, sidebarStyle, setSidebarStyle } = useSettings()
+  const { isDark, toggleDark } = useSettings()
 
   return (
     <div className="space-y-6">
@@ -210,31 +226,6 @@ function AppearanceTab() {
             Dark
           </button>
         </div>
-      </div>
-
-      {/* Sidebar style */}
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-3">Sidebar Style</p>
-        <div className="flex gap-3">
-          {['Compact', 'Default', 'Wide'].map(s => (
-            <button
-              key={s}
-              onClick={() => { setSidebarStyle(s); toast.success(`Sidebar set to ${s}`) }}
-              className={`px-4 py-2 rounded-xl text-sm border transition-all ${
-                sidebarStyle === s
-                  ? 'border-primary-600 text-primary-600 bg-primary-50 font-medium'
-                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-gray-400 mt-2">
-          {sidebarStyle === 'Compact' && 'Sidebar shows icons only on desktop.'}
-          {sidebarStyle === 'Default' && 'Standard sidebar width with labels.'}
-          {sidebarStyle === 'Wide' && 'Wider sidebar with more spacing.'}
-        </p>
       </div>
     </div>
   )
