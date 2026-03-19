@@ -48,12 +48,12 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
       exit={{ opacity: 0 }}
     >
       <motion.div 
-        className="bg-white rounded-xl p-6 w-full max-w-md mx-4"
+        className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
       >
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center p-6 pb-4 flex-shrink-0">
           <h2 className="text-xl font-semibold">
             {client ? 'Edit Client' : 'Add New Client'}
           </h2>
@@ -62,7 +62,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto px-6 pb-6 custom-scroll">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Name *
