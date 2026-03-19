@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, Search, Settings, Menu, CheckCircle, AlertCircle, DollarSign, Clock, Sun, Moon } from 'lucide-react'
+import { Bell, Search, Settings, Menu, CheckCircle, AlertCircle, DollarSign, Clock, Sun, Moon, User, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
 import { useState, useRef, useEffect } from 'react'
@@ -14,12 +14,14 @@ const notifications = [
 ]
 
 export default function Header({ onMenuClick }) {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const { isDark, toggleDark } = useSettings()
   const navigate = useNavigate()
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const [notifs, setNotifs] = useState(notifications)
   const dropdownRef = useRef(null)
+  const userMenuRef = useRef(null)
 
   const unreadCount = notifs.filter(n => n.unread).length
 
@@ -27,6 +29,9 @@ export default function Header({ onMenuClick }) {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowNotifications(false)
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setShowUserMenu(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -133,17 +138,67 @@ export default function Header({ onMenuClick }) {
             <Settings size={20} />
           </motion.button>
           
-          <div className="flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-3 border-l border-gray-200">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-              <p className="text-xs text-gray-500">Freelancer</p>
-            </div>
-            <div className="relative">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl flex items-center justify-center text-white font-semibold shadow-lg">
-                {user?.name?.charAt(0)?.toUpperCase()}
+          <div className="relative pl-2 sm:pl-3 border-l border-gray-200" ref={userMenuRef}>
+            <button
+              onClick={() => setShowUserMenu(prev => !prev)}
+              className="flex items-center space-x-2 sm:space-x-3 hover:bg-gray-100 rounded-xl px-2 py-1.5 transition-colors"
+            >
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                <p className="text-xs text-gray-500 flex items-center justify-end space-x-1">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
+                  <span>Online</span>
+                </p>
               </div>
-              <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
-            </div>
+              <div className="relative">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl flex items-center justify-center text-white font-semibold shadow-lg">
+                  {user?.name?.charAt(0)?.toUpperCase()}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 border-2 border-white rounded-full"></div>
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {showUserMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden"
+                >
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  </div>
+                  <div className="py-1">
+                    <button
+                      onClick={() => { setShowUserMenu(false); navigate('/profile') }}
+                      className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <User size={15} className="text-gray-400" />
+                      <span>View Profile</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowUserMenu(false); navigate('/settings') }}
+                      className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Settings size={15} className="text-gray-400" />
+                      <span>Settings</span>
+                    </button>
+                    <div className="border-t border-gray-100 mt-1 pt-1">
+                      <button
+                        onClick={() => { setShowUserMenu(false); logout(); navigate('/login') }}
+                        className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut size={15} />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
