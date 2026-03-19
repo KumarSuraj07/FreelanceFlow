@@ -33,6 +33,9 @@ function applyThemeColor(colorName) {
   root.style.setProperty('--color-primary-700', colors[700])
 }
 
+// Apply immediately on module load — before first render — so no blue flash
+applyThemeColor(localStorage.getItem('themeColor') || 'green')
+
 export const SettingsProvider = ({ children }) => {
   const [themeColor, setThemeColorState] = useState(() => localStorage.getItem('themeColor') || 'green')
   const [sidebarStyle, setSidebarStyleState] = useState(() => localStorage.getItem('sidebarStyle') || 'Default')
