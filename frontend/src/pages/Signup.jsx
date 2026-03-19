@@ -6,26 +6,26 @@ import { toast } from 'react-hot-toast'
 import { User, Mail, Lock, Eye, EyeOff, CheckCircle, Zap, Clock, TrendingUp, Shield } from 'lucide-react'
 
 const perks = [
-  { icon: CheckCircle, text: 'Client & project management in one dashboard' },
-  { icon: TrendingUp,  text: 'Track revenue, invoices & payment status' },
-  { icon: Clock,       text: 'Automated overdue payment reminders' },
-  { icon: Shield,      text: 'Secure JWT-based authentication' },
-  { icon: CheckCircle, text: 'PDF invoices generated & emailed instantly' },
-  { icon: CheckCircle, text: 'Meeting notes with next-step tracking' },
+  { icon: CheckCircle, text: 'Client & project management' },
+  { icon: TrendingUp,  text: 'Track revenue & invoices' },
+  { icon: Clock,       text: 'Automated payment reminders' },
+  { icon: Shield,      text: 'Secure JWT authentication' },
+  { icon: CheckCircle, text: 'PDF invoices via email' },
+  { icon: CheckCircle, text: 'Meeting notes & next steps' },
 ]
 
 const steps = [
-  { num: '1', title: 'Create your account',    desc: 'Sign up in under 30 seconds' },
-  { num: '2', title: 'Add your first client',  desc: 'Import contacts & project details' },
+  { num: '1', title: 'Create your account',     desc: 'Sign up in under 30 seconds' },
+  { num: '2', title: 'Add your first client',   desc: 'Import contacts & project details' },
   { num: '3', title: 'Send your first invoice', desc: 'Generate a PDF and email it directly' },
 ]
 
 export default function Signup() {
-  const [name, setName]             = useState('')
-  const [email, setEmail]           = useState('')
-  const [password, setPassword]     = useState('')
+  const [name, setName]                 = useState('')
+  const [email, setEmail]               = useState('')
+  const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading]       = useState(false)
+  const [loading, setLoading]           = useState(false)
   const { signup } = useAuth()
 
   const handleSubmit = async (e) => {
@@ -42,50 +42,50 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* ── Left panel ── */}
+    <div className="min-h-screen flex flex-col md:flex-row">
+
+      {/* ── Info panel (top on mobile, left on desktop) ── */}
       <motion.div
-        className="hidden md:flex flex-col justify-center auth-grid-bg w-[52%] pl-16 pr-12 py-12 relative overflow-hidden"
-        initial={{ opacity: 0, x: -40 }}
+        className="auth-grid-bg w-full md:w-[52%] px-6 py-8 md:pl-16 md:pr-12 md:py-12 relative overflow-hidden flex flex-col justify-center"
+        initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Gradient fade on right edge */}
-        <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#f0f6ff] to-transparent pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#f0f6ff] to-transparent pointer-events-none hidden md:block" />
 
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 text-xs font-semibold px-3 py-1.5 rounded-full w-fit mb-6">
+        <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 text-xs font-semibold px-3 py-1.5 rounded-full w-fit mb-4 md:mb-6">
           <Zap size={13} />
           Free forever — no credit card needed
         </div>
 
         {/* Logo + name */}
-        <div className="flex items-center gap-3 mb-5">
-          <img src="/icon.png" alt="FreelanceFlow" className="w-12 h-12 rounded-xl shadow-md" />
-          <span className="text-3xl font-bold text-gray-900">FreelanceFlow</span>
+        <div className="flex items-center gap-3 mb-4 md:mb-5">
+          <img src="/icon.png" alt="FreelanceFlow" className="w-10 h-10 md:w-12 md:h-12 rounded-xl shadow-md" />
+          <span className="text-2xl md:text-3xl font-bold text-gray-900">FreelanceFlow</span>
         </div>
 
         {/* Headline */}
-        <h2 className="text-4xl font-extrabold text-gray-900 leading-tight mb-4">
-          Run your freelance<br />
+        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 leading-tight mb-3 md:mb-4">
+          Run your freelance{' '}
           <span className="text-primary-600">business smarter.</span>
         </h2>
-        <p className="text-gray-500 text-base mb-8 max-w-sm leading-relaxed">
+        <p className="text-gray-500 text-sm md:text-base mb-5 md:mb-8 max-w-sm leading-relaxed">
           Everything you need to manage clients, deliver projects, and get paid — without the chaos of scattered tools.
         </p>
 
-        {/* Perks */}
-        <ul className="space-y-3 mb-10">
+        {/* Perks — 2-col grid on mobile, single col on desktop */}
+        <ul className="grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-3 mb-5 md:mb-10">
           {perks.map(({ icon: Icon, text }) => (
-            <li key={text} className="flex items-center gap-3 text-sm text-gray-700">
-              <Icon size={16} className="text-primary-600 shrink-0" />
+            <li key={text} className="flex items-center gap-2 text-xs md:text-sm text-gray-700">
+              <Icon size={14} className="text-primary-600 shrink-0" />
               {text}
             </li>
           ))}
         </ul>
 
-        {/* How it works */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm max-w-sm">
+        {/* How it works — hidden on mobile */}
+        <div className="hidden md:block bg-white border border-gray-200 rounded-2xl p-5 shadow-sm max-w-sm">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">How it works</p>
           <ol className="space-y-4">
             {steps.map(({ num, title, desc }) => (
@@ -103,20 +103,14 @@ export default function Signup() {
         </div>
       </motion.div>
 
-      {/* ── Right panel — form ── */}
-      <div className="flex flex-1 items-center justify-center px-6 py-10 bg-white z-10">
+      {/* ── Form panel (bottom on mobile, right on desktop) ── */}
+      <div className="flex flex-1 items-center justify-center px-6 py-8 md:py-10 bg-white">
         <motion.div
           className="w-full max-w-md"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Mobile header */}
-          <div className="flex md:hidden items-center gap-3 mb-8">
-            <img src="/icon.png" alt="FreelanceFlow" className="w-10 h-10 rounded-xl shadow" />
-            <span className="text-xl font-bold text-gray-900">FreelanceFlow</span>
-          </div>
-
           <h3 className="text-2xl font-bold text-gray-900 mb-1">Create your account 🚀</h3>
           <p className="text-gray-500 text-sm mb-8">Start managing your freelance business today — it's free</p>
 

@@ -6,10 +6,10 @@ import { toast } from 'react-hot-toast'
 import { Mail, Lock, Eye, EyeOff, Users, FileText, DollarSign, BarChart2, Zap, Star } from 'lucide-react'
 
 const features = [
-  { icon: Users,      label: 'Client Management',     desc: 'Store contacts, budgets & project types' },
-  { icon: BarChart2,  label: 'Project Tracking',       desc: 'Deadlines, deliverables & progress' },
-  { icon: DollarSign, label: 'Invoice System',         desc: 'Generate PDFs & email clients instantly' },
-  { icon: FileText,   label: 'Meeting Notes',          desc: 'Log notes & next steps per client' },
+  { icon: Users,      label: 'Client Management',  desc: 'Store contacts, budgets & project types' },
+  { icon: BarChart2,  label: 'Project Tracking',    desc: 'Deadlines, deliverables & progress' },
+  { icon: DollarSign, label: 'Invoice System',      desc: 'Generate PDFs & email clients instantly' },
+  { icon: FileText,   label: 'Meeting Notes',       desc: 'Log notes & next steps per client' },
 ]
 
 const stats = [
@@ -19,10 +19,10 @@ const stats = [
 ]
 
 export default function Login() {
-  const [email, setEmail]           = useState('')
-  const [password, setPassword]     = useState('')
+  const [email, setEmail]               = useState('')
+  const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading]       = useState(false)
+  const [loading, setLoading]           = useState(false)
   const { login } = useAuth()
 
   const handleSubmit = async (e) => {
@@ -39,65 +39,65 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* ── Left panel ── */}
+    <div className="min-h-screen flex flex-col md:flex-row">
+
+      {/* ── Info panel (top on mobile, left on desktop) ── */}
       <motion.div
-        className="hidden md:flex flex-col justify-center auth-grid-bg w-[52%] pl-16 pr-12 py-12 relative overflow-hidden"
-        initial={{ opacity: 0, x: -40 }}
+        className="auth-grid-bg w-full md:w-[52%] px-6 py-8 md:pl-16 md:pr-12 md:py-12 relative overflow-hidden flex flex-col justify-center"
+        initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Gradient fade on right edge */}
-        <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#f0f6ff] to-transparent pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#f0f6ff] to-transparent pointer-events-none hidden md:block" />
 
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 text-xs font-semibold px-3 py-1.5 rounded-full w-fit mb-6">
+        <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 text-xs font-semibold px-3 py-1.5 rounded-full w-fit mb-4 md:mb-6">
           <Zap size={13} />
           CRM built for freelancers
         </div>
 
         {/* Logo + name */}
-        <div className="flex items-center gap-3 mb-5">
-          <img src="/icon.png" alt="FreelanceFlow" className="w-12 h-12 rounded-xl shadow-md" />
-          <span className="text-3xl font-bold text-gray-900">FreelanceFlow</span>
+        <div className="flex items-center gap-3 mb-4 md:mb-5">
+          <img src="/icon.png" alt="FreelanceFlow" className="w-10 h-10 md:w-12 md:h-12 rounded-xl shadow-md" />
+          <span className="text-2xl md:text-3xl font-bold text-gray-900">FreelanceFlow</span>
         </div>
 
         {/* Headline */}
-        <h2 className="text-4xl font-extrabold text-gray-900 leading-tight mb-4">
-          Your freelance business,<br />
+        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 leading-tight mb-3 md:mb-4">
+          Your freelance business,{' '}
           <span className="text-primary-600">all in one place.</span>
         </h2>
-        <p className="text-gray-500 text-base mb-8 max-w-sm leading-relaxed">
+        <p className="text-gray-500 text-sm md:text-base mb-5 md:mb-8 max-w-sm leading-relaxed">
           Stop juggling spreadsheets and sticky notes. FreelanceFlow gives you a clean, powerful workspace to manage every part of your freelance career.
         </p>
 
         {/* Stats row */}
-        <div className="flex gap-6 mb-10">
+        <div className="flex gap-6 mb-5 md:mb-10">
           {stats.map(({ value, label }) => (
             <div key={label} className="text-center">
-              <div className="text-2xl font-extrabold text-primary-600">{value}</div>
+              <div className="text-xl md:text-2xl font-extrabold text-primary-600">{value}</div>
               <div className="text-xs text-gray-500 mt-0.5">{label}</div>
             </div>
           ))}
         </div>
 
-        {/* Feature list */}
-        <ul className="space-y-4 mb-10">
+        {/* Feature list — 2-col grid on mobile, single col on desktop */}
+        <ul className="grid grid-cols-2 md:grid-cols-1 gap-3 md:gap-4 mb-5 md:mb-10">
           {features.map(({ icon: Icon, label, desc }) => (
-            <li key={label} className="flex items-start gap-3">
-              <span className="bg-white border border-primary-100 text-primary-600 p-2 rounded-lg shadow-sm mt-0.5">
-                <Icon size={16} />
+            <li key={label} className="flex items-start gap-2 md:gap-3">
+              <span className="bg-white border border-primary-100 text-primary-600 p-1.5 md:p-2 rounded-lg shadow-sm mt-0.5 shrink-0">
+                <Icon size={14} />
               </span>
               <div>
-                <div className="text-sm font-semibold text-gray-800">{label}</div>
-                <div className="text-xs text-gray-500">{desc}</div>
+                <div className="text-xs md:text-sm font-semibold text-gray-800">{label}</div>
+                <div className="text-xs text-gray-500 hidden md:block">{desc}</div>
               </div>
             </li>
           ))}
         </ul>
 
-        {/* Testimonial */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm max-w-sm">
+        {/* Testimonial — hidden on mobile to keep it compact */}
+        <div className="hidden md:block bg-white border border-gray-200 rounded-2xl p-5 shadow-sm max-w-sm">
           <div className="flex gap-0.5 mb-2">
             {[...Array(5)].map((_, i) => <Star key={i} size={13} className="fill-yellow-400 text-yellow-400" />)}
           </div>
@@ -114,20 +114,14 @@ export default function Login() {
         </div>
       </motion.div>
 
-      {/* ── Right panel — form ── */}
-      <div className="flex flex-1 items-center justify-center px-6 py-10 bg-white z-10">
+      {/* ── Form panel (bottom on mobile, right on desktop) ── */}
+      <div className="flex flex-1 items-center justify-center px-6 py-8 md:py-10 bg-white">
         <motion.div
           className="w-full max-w-md"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Mobile header */}
-          <div className="flex md:hidden items-center gap-3 mb-8">
-            <img src="/icon.png" alt="FreelanceFlow" className="w-10 h-10 rounded-xl shadow" />
-            <span className="text-xl font-bold text-gray-900">FreelanceFlow</span>
-          </div>
-
           <h3 className="text-2xl font-bold text-gray-900 mb-1">Welcome back 👋</h3>
           <p className="text-gray-500 text-sm mb-8">Sign in to manage your freelance business</p>
 
