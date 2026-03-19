@@ -1,107 +1,132 @@
-const puppeteer = require('puppeteer');
+const PDFDocument = require('pdfkit');
 const nodemailer = require('nodemailer');
 
-const generateInvoicePDF = async (invoice, user) => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .header { text-align: center; margin-bottom: 40px; }
-        .invoice-details { margin-bottom: 30px; }
-        .client-info { margin-bottom: 30px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f5f5f5; }
-        .totals { text-align: right; }
-        .total-row { font-weight: bold; font-size: 18px; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>INVOICE</h1>
-        <h2>${user.name}</h2>
-      </div>
-      
-      <div class="invoice-details">
-        <p><strong>Invoice Number:</strong> ${invoice.invoiceNumber}</p>
-        <p><strong>Date:</strong> ${new Date(invoice.createdAt).toLocaleDateString()}</p>
-        <p><strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}</p>
-      </div>
-      
-      <div class="client-info">
-        <h3>Bill To:</h3>
-        <p>${invoice.clientId.name}</p>
-        <p>${invoice.clientId.company || ''}</p>
-        <p>${invoice.clientId.email}</p>
-      </div>
-      
-      <table>
-        <thead>
-          <tr>
-            <th>Description</th>
-            <th>Quantity</th>
-            <th>Rate</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${invoice.items.map(item => `
-            <tr>
-              <td>${item.description}</td>
-              <td>${item.quantity}</td>
-              <td>$${item.rate.toFixed(2)}</td>
-              <td>$${item.amount.toFixed(2)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      
-      <div class="totals">
-        <p>Subtotal: $${invoice.subtotal.toFixed(2)}</p>
-        <p>Tax (${invoice.taxPercent}%): $${invoice.taxAmount.toFixed(2)}</p>
-        <p class="total-row">Total: $${invoice.total.toFixed(2)}</p>
-      </div>
-    </body>
-    </html>
-  `;
-  
-  await page.setContent(html);
-  const pdf = await page.pdf({ format: 'A4' });
-  await browser.close();
-  
-  return pdf;
-};
+const generateInvoicePDF = (invoice, user) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const chunks = [];
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
 
-const sendInvoiceEmail = async (invoice, user) => {
-  const transporter = nodemailer.createTransporter({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+      const blue = '#2563eb';
+      const lightGray = '#f8fafc';
+      const darkText = '#1e293b';
+      const mutedText = '#64748b';
+
+      // Header bar
+      doc.rect(0, 0, doc.page.width, 80).fill(blue);
+      doc.fillColor('#ffffff').fontSize(28).font('Helvetica-Bold').text('INVOICE', 50, 25);
+      doc.fontSize(10).font('Helvetica').text(user.name, 50, 58);
+
+      // Invoice meta (top right)
+      doc.fillColor('#ffffff').fontSize(10)
+        .text(`Invoice #: ${invoice.invoiceNumber}`, 350, 25, { width: 200, align: 'right' })
+        .text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`, 350, 40, { width: 200, align: 'right' })
+        .text(`Due: ${new Date(invoice.dueDate).toLocaleDateString()}`, 350, 55, { width: 200, align: 'right' });
+
+      // Bill To section
+      doc.fillColor(darkText).fontSize(11).font('Helvetica-Bold').text('BILL TO', 50, 110);
+      doc.moveTo(50, 124).lineTo(200, 124).strokeColor(blue).lineWidth(1.5).stroke();
+      doc.fillColor(darkText).fontSize(10).font('Helvetica')
+        .text(invoice.clientId.name, 50, 130)
+        .text(invoice.clientId.company || '', 50, 145)
+        .text(invoice.clientId.email, 50, 160);
+
+      // From section
+      doc.fillColor(darkText).fontSize(11).font('Helvetica-Bold').text('FROM', 350, 110);
+      doc.moveTo(350, 124).lineTo(500, 124).strokeColor(blue).lineWidth(1.5).stroke();
+      doc.fillColor(darkText).fontSize(10).font('Helvetica')
+        .text(user.name, 350, 130)
+        .text(user.email || '', 350, 145)
+        .text(user.phone || '', 350, 160);
+
+      // Items table header
+      const tableTop = 210;
+      doc.rect(50, tableTop, doc.page.width - 100, 24).fill(blue);
+      doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold')
+        .text('Description', 60, tableTop + 7)
+        .text('Qty', 320, tableTop + 7, { width: 50, align: 'center' })
+        .text('Rate', 375, tableTop + 7, { width: 70, align: 'right' })
+        .text('Amount', 450, tableTop + 7, { width: 90, align: 'right' });
+
+      // Items rows
+      let y = tableTop + 24;
+      invoice.items.forEach((item, i) => {
+        const rowBg = i % 2 === 0 ? lightGray : '#ffffff';
+        doc.rect(50, y, doc.page.width - 100, 22).fill(rowBg);
+        doc.fillColor(darkText).fontSize(10).font('Helvetica')
+          .text(item.description, 60, y + 6, { width: 255 })
+          .text(String(item.quantity), 320, y + 6, { width: 50, align: 'center' })
+          .text(`$${item.rate.toFixed(2)}`, 375, y + 6, { width: 70, align: 'right' })
+          .text(`$${item.amount.toFixed(2)}`, 450, y + 6, { width: 90, align: 'right' });
+        y += 22;
+      });
+
+      // Totals
+      y += 16;
+      doc.moveTo(350, y).lineTo(540, y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+      y += 10;
+
+      const totalsLeft = 350;
+      doc.fillColor(mutedText).fontSize(10).font('Helvetica')
+        .text('Subtotal:', totalsLeft, y, { width: 100 })
+        .text(`$${invoice.subtotal.toFixed(2)}`, totalsLeft + 100, y, { width: 90, align: 'right' });
+      y += 18;
+      doc.text(`Tax (${invoice.taxPercent}%):`, totalsLeft, y, { width: 100 })
+        .text(`$${invoice.taxAmount.toFixed(2)}`, totalsLeft + 100, y, { width: 90, align: 'right' });
+      y += 10;
+      doc.moveTo(350, y).lineTo(540, y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+      y += 10;
+      doc.fillColor(blue).fontSize(13).font('Helvetica-Bold')
+        .text('Total:', totalsLeft, y, { width: 100 })
+        .text(`$${invoice.total.toFixed(2)}`, totalsLeft + 100, y, { width: 90, align: 'right' });
+
+      // Status badge
+      const statusColors = { Paid: '#16a34a', Unpaid: '#d97706', Overdue: '#dc2626' };
+      const statusBg = statusColors[invoice.status] || '#64748b';
+      doc.rect(50, y - 5, 80, 24).fill(statusBg).fillColor('#ffffff')
+        .fontSize(10).font('Helvetica-Bold')
+        .text(invoice.status, 50, y + 2, { width: 80, align: 'center' });
+
+      // Footer
+      const footerY = doc.page.height - 60;
+      doc.rect(0, footerY, doc.page.width, 60).fill(lightGray);
+      doc.fillColor(mutedText).fontSize(9).font('Helvetica')
+        .text('Thank you for your business!', 50, footerY + 12, { align: 'center', width: doc.page.width - 100 })
+        .text(`Generated by FreelanceFlow · ${new Date().toLocaleDateString()}`, 50, footerY + 28, { align: 'center', width: doc.page.width - 100 });
+
+      doc.end();
+    } catch (err) {
+      reject(err);
     }
   });
+};
 
+const createTransporter = () => nodemailer.createTransporter({
+  host: process.env.EMAIL_HOST,
+  port: Number(process.env.EMAIL_PORT) || 587,
+  secure: false,
+  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  tls: { rejectUnauthorized: false }
+});
+
+const sendInvoiceEmail = async (invoice, user) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('Email credentials are not configured in .env');
+  }
+  const transporter = createTransporter();
+  await transporter.verify();
   const pdfBuffer = await generateInvoicePDF(invoice, user);
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
+  await transporter.sendMail({
+    from: `"${user.name}" <${process.env.EMAIL_USER}>`,
     to: invoice.clientId.email,
     subject: `Invoice ${invoice.invoiceNumber} from ${user.name}`,
-    text: `Please find attached invoice ${invoice.invoiceNumber}. Due date: ${new Date(invoice.dueDate).toLocaleDateString()}`,
-    attachments: [{
-      filename: `invoice-${invoice.invoiceNumber}.pdf`,
-      content: pdfBuffer
-    }]
-  };
-
-  await transporter.sendMail(mailOptions);
+    text: `Please find attached invoice ${invoice.invoiceNumber}.\nDue: ${new Date(invoice.dueDate).toLocaleDateString()}\nTotal: $${invoice.total.toFixed(2)}`,
+    html: `<p>Hi ${invoice.clientId.name},</p><p>Please find attached invoice <strong>${invoice.invoiceNumber}</strong> for <strong>$${invoice.total.toFixed(2)}</strong>.</p><p>Due: ${new Date(invoice.dueDate).toLocaleDateString()}</p><p>Thanks,<br/>${user.name}</p>`,
+    attachments: [{ filename: `invoice-${invoice.invoiceNumber}.pdf`, content: pdfBuffer }]
+  });
 };
 
 module.exports = { generateInvoicePDF, sendInvoiceEmail };

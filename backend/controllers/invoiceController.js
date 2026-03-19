@@ -87,10 +87,13 @@ exports.sendEmail = async (req, res) => {
     if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
-    
+    if (!invoice.clientId?.email) {
+      return res.status(400).json({ message: 'Client has no email address on file' });
+    }
     await sendInvoiceEmail(invoice, req.user);
     res.json({ message: 'Invoice sent successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Send invoice error:', error.message);
+    res.status(500).json({ message: error.message || 'Failed to send invoice' });
   }
 };

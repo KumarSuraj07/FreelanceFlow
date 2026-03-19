@@ -1,10 +1,50 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Download, Send, Trash2 } from 'lucide-react'
+import { Plus, Download, Send, Trash2, ChevronDown } from 'lucide-react'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import { format } from 'date-fns'
+
+const StatusDropdown = ({ invoice, onChange }) => {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const statuses = ['Unpaid', 'Paid', 'Overdue']
+  const colors = { Paid: 'bg-green-100 text-green-800', Overdue: 'bg-red-100 text-red-800', Unpaid: 'bg-yellow-100 text-yellow-800' }
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${colors[invoice.status]} hover:opacity-80 transition-opacity`}
+      >
+        <span>{invoice.status}</span>
+        <ChevronDown size={11} />
+      </button>
+      {open && (
+        <div className="absolute left-0 mt-1 w-28 bg-white rounded-lg shadow-lg border border-gray-100 z-20 overflow-hidden">
+          {statuses.map(s => (
+            <button
+              key={s}
+              onClick={() => { onChange(invoice._id, s); setOpen(false) }}
+              className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 transition-colors ${
+                invoice.status === s ? 'opacity-40 cursor-default' : ''
+              }`}
+            >
+              <span className={`px-2 py-0.5 rounded-full ${colors[s]}`}>{s}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState([])
@@ -37,19 +77,30 @@ export default function Invoices() {
     }
   }
 
-  const handleDownloadPDF = async (id) => {
+  const handleStatusChange = async (id, status) => {
+    try {
+      await axios.put(`/api/invoices/${id}`, { status })
+      setInvoices(invoices.map(inv => inv._id === id ? { ...inv, status } : inv))
+      toast.success(`Marked as ${status}`)
+    } catch (error) {
+      toast.error('Failed to update status')
+    }
+  }
+
+  const handleDownloadPDF = async (id, invoiceNumber) => {
     try {
       const response = await axios.get(`/api/invoices/${id}/pdf`, {
         responseType: 'blob'
       })
       
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `invoice-${id}.pdf`)
+      link.setAttribute('download', `invoice-${invoiceNumber || id}.pdf`)
       document.body.appendChild(link)
       link.click()
       link.remove()
+      window.URL.revokeObjectURL(url)
       
       toast.success('PDF downloaded successfully')
     } catch (error) {
@@ -66,16 +117,6 @@ export default function Invoices() {
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Paid':
-        return 'bg-green-100 text-green-800'
-      case 'Overdue':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-yellow-100 text-yellow-800'
-    }
-  }
 
   if (loading) {
     return (
@@ -135,16 +176,14 @@ export default function Invoices() {
                   <p className="text-xs text-gray-500">{invoice.clientId.company}</p>
                 )}
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                {invoice.status}
-              </span>
+              <StatusDropdown invoice={invoice} onChange={handleStatusChange} />
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="font-bold text-gray-900 text-base">${invoice.total.toLocaleString()}</span>
               <span className="text-gray-500">Due {format(new Date(invoice.dueDate), 'MMM dd, yyyy')}</span>
             </div>
             <div className="flex space-x-2 pt-1 border-t border-gray-100">
-              <button onClick={() => handleDownloadPDF(invoice._id)} className="flex-1 flex items-center justify-center space-x-1.5 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+              <button onClick={() => handleDownloadPDF(invoice._id, invoice.invoiceNumber)} className="flex-1 flex items-center justify-center space-x-1.5 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                 <Download size={15} /><span>PDF</span>
               </button>
               <button onClick={() => handleSendEmail(invoice._id)} className="flex-1 flex items-center justify-center space-x-1.5 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors">
@@ -196,13 +235,11 @@ export default function Invoices() {
                   <td className="py-3 px-4 font-medium">${invoice.total.toLocaleString()}</td>
                   <td className="py-3 px-4">{format(new Date(invoice.dueDate), 'MMM dd, yyyy')}</td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                      {invoice.status}
-                    </span>
+                    <StatusDropdown invoice={invoice} onChange={handleStatusChange} />
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex space-x-2">
-                      <button onClick={() => handleDownloadPDF(invoice._id)} className="p-1 text-blue-600 hover:text-blue-800" title="Download PDF">
+                      <button onClick={() => handleDownloadPDF(invoice._id, invoice.invoiceNumber)} className="p-1 text-blue-600 hover:text-blue-800" title="Download PDF">
                         <Download size={16} />
                       </button>
                       <button onClick={() => handleSendEmail(invoice._id)} className="p-1 text-green-600 hover:text-green-800" title="Send Email">
