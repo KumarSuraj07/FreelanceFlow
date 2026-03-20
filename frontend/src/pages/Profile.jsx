@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { User, Mail, Phone, MapPin, Lock, Save, Edit2, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Lock, Save, Edit2, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
-
-const PHONE_REGEX = /^\+?[1-9]\d{6,14}$/
-const LOCATION_REGEX = /^[a-zA-Z\s,.-]{2,100}$/
+import PhoneInput from '../components/ui/PhoneInput'
+import LocationSelect from '../components/ui/LocationSelect'
 
 export default function Profile() {
   const { user, updateUser } = useAuth()
@@ -34,12 +33,6 @@ export default function Profile() {
   const isStrongPw = pwChecks.every(c => c.ok)
 
   const handleProfileSave = async () => {
-    const errs = {}
-    if (profileData.phone && !PHONE_REGEX.test(profileData.phone.replace(/[\s()-]/g, '')))
-      errs.phone = 'Enter a valid phone number (e.g. +1234567890)'
-    if (profileData.location && !LOCATION_REGEX.test(profileData.location))
-      errs.location = 'Enter a valid location (e.g. New York, USA)'
-    if (Object.keys(errs).length) { setFieldErrors(errs); return }
     setFieldErrors({})
     setSaving(true)
     try {
@@ -92,6 +85,8 @@ export default function Profile() {
     </div>
   )
 
+
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
@@ -126,8 +121,25 @@ export default function Profile() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field icon={User} label="Full Name" field="name" />
           <Field icon={Mail} label="Email Address" field="email" type="email" />
-          <Field icon={Phone} label="Phone Number" field="phone" />
-          <Field icon={MapPin} label="Location" field="location" />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <PhoneInput
+              value={profileData.phone}
+              onChange={val => setProfileData(p => ({ ...p, phone: val }))}
+              error={fieldErrors.phone}
+              disabled={!editMode}
+            />
+            {fieldErrors.phone && <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <LocationSelect
+              value={profileData.location}
+              onChange={val => setProfileData(p => ({ ...p, location: val }))}
+              error={fieldErrors.location}
+              disabled={!editMode}
+            />
+          </div>
         </div>
 
         {editMode && (

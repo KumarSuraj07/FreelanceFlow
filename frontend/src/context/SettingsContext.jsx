@@ -23,6 +23,8 @@ const DEFAULT_NOTIF_PREFS = {
   'New client added': true,
 }
 
+const DEFAULT_BUSINESS = { businessName: '', website: '', currency: 'USD', taxRate: '0', invoicePrefix: 'INV' }
+
 function applyThemeColor(colorName) {
   const colors = THEME_COLORS[colorName]
   if (!colors) return
@@ -43,6 +45,11 @@ export const SettingsProvider = ({ children }) => {
   const [notifPrefs, setNotifPrefsState] = useState(() => {
     try { return JSON.parse(localStorage.getItem('notifPrefs')) || DEFAULT_NOTIF_PREFS }
     catch { return DEFAULT_NOTIF_PREFS }
+  })
+
+  const [businessSettings, setBusinessSettingsState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('businessSettings')) || DEFAULT_BUSINESS }
+    catch { return DEFAULT_BUSINESS }
   })
 
   useEffect(() => { applyThemeColor(themeColor) }, [themeColor])
@@ -67,6 +74,11 @@ export const SettingsProvider = ({ children }) => {
     setNotifPrefsState(prefs)
   }
 
+  const setBusinessSettings = (settings) => {
+    localStorage.setItem('businessSettings', JSON.stringify(settings))
+    setBusinessSettingsState(settings)
+  }
+
   const toggleDark = () => {
     const next = !isDark
     localStorage.setItem('darkMode', String(next))
@@ -74,7 +86,7 @@ export const SettingsProvider = ({ children }) => {
   }
 
   return (
-    <SettingsContext.Provider value={{ themeColor, setThemeColor, sidebarStyle, setSidebarStyle, notifPrefs, setNotifPrefs, THEME_COLORS, isDark, toggleDark }}>
+    <SettingsContext.Provider value={{ themeColor, setThemeColor, sidebarStyle, setSidebarStyle, notifPrefs, setNotifPrefs, businessSettings, setBusinessSettings, THEME_COLORS, isDark, toggleDark }}>
       {children}
     </SettingsContext.Provider>
   )

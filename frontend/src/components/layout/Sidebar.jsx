@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { 
@@ -27,6 +27,7 @@ const SIDEBAR_WIDTHS = { Compact: 'w-16', Default: 'w-64', Wide: 'w-72' }
 export default function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth()
   const { sidebarStyle, setSidebarStyle } = useSettings()
+  const navigate = useNavigate()
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
   const isCompact = sidebarStyle === 'Compact'
   const sidebarW = SIDEBAR_WIDTHS[sidebarStyle] || 'w-64'
@@ -84,7 +85,12 @@ export default function Sidebar({ isOpen, onClose }) {
       {!isCompact && (
         <div className="px-1 sm:px-2 mb-3 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <img src="/logo.png" alt="FreelanceFlow" className="object-contain h-29" />
+            <img
+              src="/logo.png"
+              alt="FreelanceFlow"
+              className="object-contain h-29 cursor-pointer"
+              onClick={() => navigate('/dashboard')}
+            />
           </div>
           <div className="mt-0 mb-3 p-2 bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg">
             <p className="text-sm font-medium text-gray-900">Welcome back,</p>

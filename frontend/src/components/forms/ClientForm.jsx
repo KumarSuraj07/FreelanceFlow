@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
-
-const PHONE_REGEX = /^\+?[1-9]\d{6,14}$/
-const LOCATION_REGEX = /^[a-zA-Z\s,.-]{2,100}$/
+import PhoneInput from '../ui/PhoneInput'
+import LocationSelect from '../ui/LocationSelect'
 
 export default function ClientForm({ client, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -35,10 +34,8 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
 
   const validate = () => {
     const errs = {}
-    if (formData.phone && !PHONE_REGEX.test(formData.phone.replace(/[\s()-]/g, '')))
-      errs.phone = 'Enter a valid phone number (e.g. +1234567890)'
-    if (formData.location && !LOCATION_REGEX.test(formData.location))
-      errs.location = 'Enter a valid location (e.g. New York, USA)'
+    if (formData.budget !== '' && Number(formData.budget) < 0)
+      errs.budget = 'Budget cannot be negative'
     return errs
   }
 
@@ -51,20 +48,18 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    setFormData(prev => ({ ...prev, [name]: value }))
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }))
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <motion.div 
+      <motion.div
         className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -81,9 +76,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
 
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto px-6 pb-6 custom-scroll">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
             <input
               type="text"
               name="name"
@@ -95,9 +88,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
             <input
               type="email"
               name="email"
@@ -110,34 +101,25 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <input
-              type="tel"
-              name="phone"
+            <PhoneInput
               value={formData.phone}
-              onChange={handleChange}
-              placeholder="+1234567890"
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.phone ? 'border-red-400' : 'border-gray-300'}`}
+              onChange={val => setFormData(prev => ({ ...prev, phone: val }))}
+              error={errors.phone}
             />
             {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-            <input
-              type="text"
-              name="location"
+            <LocationSelect
               value={formData.location}
-              onChange={handleChange}
-              placeholder="City, Country"
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.location ? 'border-red-400' : 'border-gray-300'}`}
+              onChange={val => setFormData(prev => ({ ...prev, location: val }))}
+              error={errors.location}
             />
-            {errors.location && <p className="text-xs text-red-500 mt-1">{errors.location}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
             <input
               type="text"
               name="company"
@@ -148,9 +130,7 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Project Type
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Project Type</label>
             <input
               type="text"
               name="projectType"
@@ -161,22 +141,21 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Budget
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Budget</label>
             <input
               type="number"
               name="budget"
               value={formData.budget}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              min="0"
+              step="0.01"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.budget ? 'border-red-400' : 'border-gray-300'}`}
             />
+            {errors.budget && <p className="text-xs text-red-500 mt-1">{errors.budget}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               name="status"
               value={formData.status}
@@ -190,17 +169,10 @@ export default function ClientForm({ client, onSubmit, onCancel }) {
           </div>
 
           <div className="flex space-x-3 pt-4">
-            <button
-              type="submit"
-              className="flex-1 btn-primary"
-            >
+            <button type="submit" className="flex-1 btn-primary">
               {client ? 'Update' : 'Create'} Client
             </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 btn-secondary"
-            >
+            <button type="button" onClick={onCancel} className="flex-1 btn-secondary">
               Cancel
             </button>
           </div>

@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Bell, Lock, Palette, Save, Eye, EyeOff, Sun, Moon } from 'lucide-react'
+import { User, Bell, Lock, Palette, Save, Eye, EyeOff, Sun, Moon, Briefcase } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
+import PhoneInput from '../components/ui/PhoneInput'
+import LocationSelect from '../components/ui/LocationSelect'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
 const tabs = [
   { id: 'profile', label: 'Profile', icon: User },
+  { id: 'business', label: 'Business', icon: Briefcase },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'security', label: 'Security', icon: Lock },
   { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -23,13 +26,12 @@ const NOTIF_OPTIONS = [
 // ── Profile Tab ──────────────────────────────────────────────────────────────
 function ProfileTab() {
   const { user, updateUser } = useAuth()
-  const [form, setForm] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    location: user?.location || '',
-  })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', location: '' })
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (user) setForm({ name: user.name || '', email: user.email || '', phone: user.phone || '', location: user.location || '' })
+  }, [user])
 
   const handleSave = async () => {
     setSaving(true)
@@ -56,8 +58,6 @@ function ProfileTab() {
         {[
           { label: 'Full Name', key: 'name', placeholder: 'Your name' },
           { label: 'Email', key: 'email', placeholder: 'you@example.com' },
-          { label: 'Phone', key: 'phone', placeholder: '+1 (555) 000-0000' },
-          { label: 'Location', key: 'location', placeholder: 'City, Country' },
         ].map(({ label, key, placeholder }) => (
           <div key={key}>
             <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -69,8 +69,77 @@ function ProfileTab() {
             />
           </div>
         ))}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <PhoneInput
+            value={form.phone}
+            onChange={val => setForm(f => ({ ...f, phone: val }))}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <LocationSelect
+            value={form.location}
+            onChange={val => setForm(f => ({ ...f, location: val }))}
+          />
+        </div>
       </div>
       <SaveButton onClick={handleSave} loading={saving} />
+    </div>
+  )
+}
+
+// ── Business Tab ─────────────────────────────────────────────────────────────
+function BusinessTab() {
+  const { businessSettings, setBusinessSettings } = useSettings()
+  const [form, setForm] = useState({
+    businessName: businessSettings?.businessName || '',
+    website: businessSettings?.website || '',
+    currency: businessSettings?.currency || 'USD',
+    taxRate: businessSettings?.taxRate || '0',
+    invoicePrefix: businessSettings?.invoicePrefix || 'INV',
+  })
+
+  const currencies = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'JPY', 'SGD']
+
+  const handleSave = () => {
+    setBusinessSettings(form)
+    toast.success('Business settings saved!')
+  }
+
+  return (
+    <div className="space-y-5">
+      <h2 className="text-lg font-semibold text-gray-900">Business Settings</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {[
+          { label: 'Business Name', key: 'businessName', placeholder: 'Your business name' },
+          { label: 'Website', key: 'website', placeholder: 'https://yoursite.com' },
+          { label: 'Invoice Prefix', key: 'invoicePrefix', placeholder: 'INV' },
+          { label: 'Tax Rate (%)', key: 'taxRate', placeholder: '0', type: 'number' },
+        ].map(({ label, key, placeholder, type }) => (
+          <div key={key}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <input
+              type={type || 'text'}
+              value={form[key]}
+              onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+              placeholder={placeholder}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+        ))}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+          <select
+            value={form.currency}
+            onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+          >
+            {currencies.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+      </div>
+      <SaveButton onClick={handleSave} />
     </div>
   )
 }
@@ -276,6 +345,7 @@ export default function Settings() {
 
         <div className="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           {activeTab === 'profile'       && <ProfileTab />}
+          {activeTab === 'business'      && <BusinessTab />}
           {activeTab === 'notifications' && <NotificationsTab />}
           {activeTab === 'security'      && <SecurityTab />}
           {activeTab === 'appearance'    && <AppearanceTab />}

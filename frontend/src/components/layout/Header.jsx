@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, Search, Settings, Menu, CheckCircle, AlertCircle, DollarSign, Clock, Sun, Moon, User, LogOut } from 'lucide-react'
+import { Bell, Search, Menu, CheckCircle, AlertCircle, DollarSign, Clock, Sun, Moon, User, LogOut, Users, FolderOpen, X, Settings } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -38,11 +38,31 @@ export default function Header({ onMenuClick }) {
   const dropdownRef = useRef(null)
   const userMenuRef = useRef(null)
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [showSearchResults, setShowSearchResults] = useState(false)
+  const [allClients, setAllClients] = useState([])
+  const [allProjects, setAllProjects] = useState([])
+  const searchRef = useRef(null)
+
   const fetchNotifs = useCallback(async () => {
     try {
       const { data } = await axios.get('/api/notifications')
       setNotifs(data)
     } catch {}
+  }, [])
+
+  // Fetch clients and projects once for search
+  useEffect(() => {
+    const fetchSearchData = async () => {
+      try {
+        const [c, p] = await Promise.all([axios.get('/api/clients'), axios.get('/api/projects')])
+        setAllClients(c.data)
+        setAllProjects(p.data)
+      } catch {}
+    }
+    fetchSearchData()
   }, [])
 
   useEffect(() => {
@@ -55,10 +75,37 @@ export default function Header({ onMenuClick }) {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowNotifications(false)
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false)
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearchResults(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  const handleSearch = (e) => {
+    const q = e.target.value
+    setSearchQuery(q)
+    if (!q.trim()) { setSearchResults([]); setShowSearchResults(false); return }
+
+    const lower = q.toLowerCase()
+    const matchedClients = allClients
+      .filter(c => c.name?.toLowerCase().includes(lower) || c.company?.toLowerCase().includes(lower) || c.email?.toLowerCase().includes(lower))
+      .slice(0, 4)
+      .map(c => ({ type: 'client', id: c._id, title: c.name, subtitle: c.company || c.email, path: `/clients/${c._id}` }))
+
+    const matchedProjects = allProjects
+      .filter(p => p.title?.toLowerCase().includes(lower) || p.clientId?.name?.toLowerCase().includes(lower))
+      .slice(0, 4)
+      .map(p => ({ type: 'project', id: p._id, title: p.title, subtitle: p.clientId?.name || '', path: `/projects` }))
+
+    setSearchResults([...matchedClients, ...matchedProjects])
+    setShowSearchResults(true)
+  }
+
+  const handleResultClick = (result) => {
+    navigate(result.path)
+    setSearchQuery('')
+    setShowSearchResults(false)
+  }
 
   const unreadCount = notifs.filter(n => !readIds.has(n.id)).length
 
@@ -86,13 +133,59 @@ export default function Header({ onMenuClick }) {
             <Menu size={20} />
           </motion.button>
           
-          <div className="relative hidden sm:block">
+          {/* Search bar */}
+          <div className="relative hidden sm:block" ref={searchRef}>
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2.5 w-48 md:w-80 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 placeholder-gray-500 transition-all duration-200"
+              value={searchQuery}
+              onChange={handleSearch}
+              onFocus={() => searchQuery && setShowSearchResults(true)}
+              placeholder="Search clients, projects..."
+              className="pl-10 pr-8 py-2.5 w-48 md:w-80 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 placeholder-gray-500 transition-all duration-200"
             />
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(''); setShowSearchResults(false) }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={14} />
+              </button>
+            )}
+
+            <AnimatePresence>
+              {showSearchResults && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden"
+                >
+                  {searchResults.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-sm text-gray-400">No results found</div>
+                  ) : (
+                    <div className="divide-y divide-gray-50">
+                      {searchResults.map(result => (
+                        <button
+                          key={result.type + result.id}
+                          onClick={() => handleResultClick(result)}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                        >
+                          <div className={`p-1.5 rounded-lg flex-shrink-0 ${result.type === 'client' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>
+                            {result.type === 'client' ? <Users size={14} /> : <FolderOpen size={14} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{result.title}</p>
+                            <p className="text-xs text-gray-500 truncate">{result.subtitle} · {result.type}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
         
@@ -166,15 +259,6 @@ export default function Header({ onMenuClick }) {
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
           </motion.button>
 
-          <motion.button 
-            onClick={() => navigate('/settings')}
-            className="hidden sm:flex p-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all duration-200"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Settings size={20} />
-          </motion.button>
-          
           <div className="relative pl-2 sm:pl-3 border-l border-gray-200" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(prev => !prev)}
