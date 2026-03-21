@@ -1,4 +1,13 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth'
+import { auth } from '../utils/firebase'
 import axios from 'axios'
 
 const AuthContext = createContext()
@@ -9,65 +18,92 @@ export const useAuth = () => {
   return context
 }
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const logoutRef = useRef(null)
+const setAxiosToken = (token) => {
+  if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+  else delete axios.defaults.headers.common['Authorization']
+}
 
-  const logout = () => {
-    localStorage.removeItem('token')
+export const AuthProvider = ({ children }) => {
+  const [user, setUser]       = useState(null)
+  const [loading, setLoading] = useState(true)
+  const logoutRef             = useRef(null)
+
+  const logout = async () => {
+    await signOut(auth)
     localStorage.removeItem('user')
-    delete axios.defaults.headers.common['Authorization']
+    setAxiosToken(null)
     setUser(null)
   }
 
-  // keep ref in sync so the interceptor always calls the latest logout
   logoutRef.current = logout
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      const userData = localStorage.getItem('user')
-      if (userData) setUser(JSON.parse(userData))
-    }
-    setLoading(false)
-
-    // 401 interceptor — auto-logout on expired/invalid token
+    // 401 interceptor
     const interceptor = axios.interceptors.response.use(
       res => res,
       err => {
-        if (err.response?.status === 401 && logoutRef.current) {
-          logoutRef.current()
-        }
+        if (err.response?.status === 401) logoutRef.current?.()
         return Promise.reject(err)
       }
     )
-    return () => axios.interceptors.response.eject(interceptor)
+
+    // Firebase auth state listener
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser && firebaseUser.emailVerified) {
+        try {
+          const token = await firebaseUser.getIdToken()
+          setAxiosToken(token)
+          const cached = localStorage.getItem('user')
+          if (cached) {
+            setUser(JSON.parse(cached))
+          } else {
+            const res = await axios.post('/api/auth/sync')
+            localStorage.setItem('user', JSON.stringify(res.data.user))
+            setUser(res.data.user)
+          }
+        } catch {
+          setUser(null)
+        }
+      } else {
+        setAxiosToken(null)
+        setUser(null)
+      }
+      setLoading(false)
+    })
+
+    return () => {
+      unsubscribe()
+      axios.interceptors.response.eject(interceptor)
+    }
   }, [])
 
+  const signup = async (name, email, password) => {
+    const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password)
+    await sendEmailVerification(firebaseUser)
+    // Don't sync to backend yet — wait for email verification
+    await signOut(auth)
+    return { needsVerification: true }
+  }
+
   const login = async (email, password) => {
-    const response = await axios.post('/api/auth/login', { email, password })
-    const { token, user } = response.data
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    setUser(user)
-    return response.data
+    const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password)
+    if (!firebaseUser.emailVerified) {
+      await signOut(auth)
+      throw new Error('Please verify your email before logging in. Check your inbox.')
+    }
+    const token = await firebaseUser.getIdToken()
+    setAxiosToken(token)
+    // Sync with backend — creates user in MongoDB if first login
+    const res = await axios.post('/api/auth/sync', {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    localStorage.setItem('user', JSON.stringify(res.data.user))
+    setUser(res.data.user)
+    return res.data
   }
 
-  const sendOtp = async (name, email, password) => {
-    await axios.post('/api/auth/send-otp', { name, email, password })
-  }
-
-  const signup = async (email, otp) => {
-    const response = await axios.post('/api/auth/signup', { email, otp })
-    const { token, user } = response.data
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(user))
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    setUser(user)
-    return response.data
+  const forgotPassword = async (email) => {
+    await sendPasswordResetEmail(auth, email)
   }
 
   const updateUser = (updatedUser) => {
@@ -77,7 +113,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, sendOtp, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, forgotPassword, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   )

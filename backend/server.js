@@ -57,14 +57,6 @@ const globalLimiter = rateLimit({
   message: { message: 'Too many requests, please try again later.' },
 });
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10, // max 10 login/signup attempts per 15 min
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { message: 'Too many auth attempts, please try again later.' },
-});
-
 app.use(globalLimiter);
 
 // Health check
@@ -72,7 +64,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().
 app.get('/', (req, res) => res.json({ message: 'FreelanceFlow API is running', status: 'ok' }));
 
 // Routes
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/invoices', invoiceRoutes);
